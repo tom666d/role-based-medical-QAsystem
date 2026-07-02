@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+autogen-agentchat
+autogen-ext[openai]
+chromadb
+sentence-transformers
+python-dotenv

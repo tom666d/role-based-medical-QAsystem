@@ -1,0 +1,23 @@
+# Secrets — never commit
+.env
+*.key
+
+# Virtual environment
+autogen-demo/
+venv/
+__pycache__/
+*.pyc
+
+# Local data (not needed for others to run the demo)
+chroma-data/
+lab_demo.db
+transcripts.json
+team-config.json
+audio_files/
+
+# OS files
+.DS_Store
+
+# IDE
+.vscode/
+.coding/
