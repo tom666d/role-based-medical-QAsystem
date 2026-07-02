@@ -1,5 +1,12 @@
 # Role-Based Medical Records AI System
 
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688)
+![AutoGen](https://img.shields.io/badge/AutoGen-Multi--Agent-purple)
+![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED)
+![Azure](https://img.shields.io/badge/Deployed-Azure%20Container%20Apps-0078D4)
+
 A multi-agent LLM system built with **AutoGen** and **ChromaDB** that enforces role-based access control (doctor / patient / pharmacist) at the **database retrieval layer**, not the prompt layer — meaning access boundaries hold regardless of what the LLM is asked to do.
 
 Deployed as a containerized **FastAPI** REST API to **Azure Container Apps**.
