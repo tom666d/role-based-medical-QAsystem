@@ -9,7 +9,7 @@
 
 An AI assistant for querying medical records that answers different users differently depending on who they are — a doctor can see everything, a patient can only see their own file, and a pharmacist can only see prescriptions. Ask it a question in plain English and it retrieves and summarizes the relevant medical record on its own.
 
-Built with a multi-agent LLM (**AutoGen**) backed by a vector database (**ChromaDB**), exposed as a **FastAPI** REST API, containerized with **Docker**, and deployed to **Azure Container Apps**.
+Built with a multi-agent LLM (**AutoGen**, powered by `openai/gpt-oss-120b` via **Groq**) backed by a vector database (**ChromaDB**), exposed as a **FastAPI** REST API, containerized with **Docker**, and deployed to **Azure Container Apps**.
 
 ---
 
@@ -17,7 +17,8 @@ Built with a multi-agent LLM (**AutoGen**) backed by a vector database (**Chroma
 
 ```mermaid
 flowchart TD
-    A[Medical transcripts] --> B[Chunk by section]
+    A[Audio recording] --> A2[Whisper transcription]
+    A2 --> B[Chunk by section]
     B --> C[Generate embeddings]
     C --> D[Store in ChromaDB]
 
@@ -32,6 +33,8 @@ flowchart TD
 ```
 
 The highlighted step (**ChromaDB filters by role**) is where access control actually happens — the database query itself excludes unauthorized records before they ever reach the LLM. The agent never decides who the user is; it only acts on a role that was already verified by the API.
+
+**Where the LLM is involved:** only on the query side — once to decide which retrieval tool to call based on the verified role, and once to turn the retrieved record fragments into a readable answer. Chunking and embedding on the ingestion side are deterministic, non-LLM steps.
 
 **Roles and their retrieval scope:**
 
@@ -65,6 +68,7 @@ results = collection.query(
 - **AutoGen** (autogen-agentchat, autogen-ext) — multi-agent orchestration
 - **ChromaDB** — vector database for semantic retrieval with metadata filtering
 - **sentence-transformers** — text embedding (all-MiniLM-L6-v2)
+- **Whisper** (via Groq) — audio transcription of patient visit recordings
 - **Groq** (openai/gpt-oss-120b) — LLM inference via OpenAI-compatible API
 - **FastAPI** — REST API layer, handles auth and request routing
 - **Docker** — containerization, built for linux/amd64 for cloud compatibility
@@ -113,7 +117,9 @@ curl -X POST http://localhost:8000/query -H "Authorization: Bearer key-doctor-00
 
 The application layer is containerized and deployed to Azure Container Apps, navigating several subscription-level constraints along the way (region deployment policies, resource provider registration, ACR Tasks restrictions on student subscriptions, and cross-architecture image builds for arm64 to amd64).
 
-**Known limitation:** the persistent ChromaDB instance currently runs locally rather than as a cloud-hosted service, so the deployed API endpoint requires the vector store to be reachable from the cloud environment to serve live queries. Cloud-hosting the vector store is the natural next step toward a fully cloud-native deployment.
+**Known limitations:**
+- The persistent ChromaDB instance currently runs locally rather than as a cloud-hosted service, so the deployed API endpoint requires the vector store to be reachable from the cloud environment to serve live queries. Cloud-hosting the vector store is the natural next step toward a fully cloud-native deployment.
+- Whisper-based audio transcription is implemented (`tools/transcription_tool.py`) but not yet wired into the deployed agent's toolset — the current deployment uses pre-chunked mock transcripts for fast, reproducible testing.
 
 ---
 
