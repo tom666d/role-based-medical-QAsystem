@@ -7,9 +7,13 @@
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED)
 ![Azure](https://img.shields.io/badge/Deployed-Azure%20Container%20Apps-0078D4)
 
-A multi-agent LLM system built with **AutoGen** and **ChromaDB** that enforces role-based access control (doctor / patient / pharmacist) at the **database retrieval layer**, not the prompt layer — meaning access boundaries hold regardless of what the LLM is asked to do.
+An AI assistant for querying medical records that answers different users differently depending on who they are — a doctor can see everything, a patient can only see their own file, and a pharmacist can only see prescriptions. Ask it a question in plain English and it retrieves and summarizes the relevant medical record on its own.
 
-Deployed as a containerized **FastAPI** REST API to **Azure Container Apps**.
+Built with a multi-agent LLM (**AutoGen**) backed by a vector database (**ChromaDB**), exposed as a **FastAPI** REST API, containerized with **Docker**, and deployed to **Azure Container Apps**.
+
+**Data flow:** transcripts are chunked by section (summary / diagnosis / prescription) → embedded and stored in ChromaDB with metadata (`patient_id`, `section`) → a client sends a query with a Bearer token → FastAPI verifies the role and injects it into the agent's context → the AutoGen agent calls the role-scoped retrieval tool → ChromaDB filters results by metadata before they ever reach the LLM → the agent formats and returns the answer.
+
+
 
 ---
 
@@ -33,22 +37,30 @@ The LLM never decides *who the user is* — that's resolved upstream by the API 
 ---
 
 ## Architecture
+
+```mermaid
+flowchart TD
+    A[Medical transcripts] --> B[Chunk by section]
+    B --> C[Generate embeddings]
+    C --> D[Store in ChromaDB]
+
+    E[Client sends query] --> F[FastAPI verifies role]
+    F --> G[AutoGen agent]
+    G --> H[ChromaDB filters by role]
+    H --> I[Agent returns answer]
+
+    D -.retrieval.-> H
+
+    style H fill:#f4c9a8,stroke:#d85a30
 ```
-Client (curl/app)
-      |
-      | Bearer token
-      v
-FastAPI (main.py)
-      |
-      | 1. Verify role (auth.py)
-      | 2. Inject verified role
-      v
-AutoGen MedicalAgent (team.py)
-      |
-      | 3. Call role-scoped tool
-      v
-ChromaDB (vector DB, filtered)
-```
+
+**Roles and their retrieval scope:**
+
+| Role | Tool | Access scope |
+|---|---|---|
+| Doctor | `query_all_records` | All patients, all record sections |
+| Patient | `query_patient_records` | Own records only (`patient_id` filter) |
+| Pharmacist | `query_prescriptions_only` | Prescriptions only, across all patients (`section` filter) |
 
 **Roles and their retrieval scope:**
 
